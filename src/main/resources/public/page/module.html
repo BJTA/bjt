@@ -1,0 +1,311 @@
+<meta charset="UTF-8">
+<title>模块管理页面</title>
+<script type="text/javascript" src="../jquery-easyui-1.5.4.1/jquery.min.js" ></script>
+        <script type="text/javascript" src="../jquery-easyui-1.5.4.1/jquery.easyui.min.js" ></script>
+        <script type="text/javascript" src="../jquery-easyui-1.5.4.1/locale/easyui-lang-zh_CN.js" ></script>
+        <link rel="stylesheet" href="../jquery-easyui-1.5.4.1/themes/icon.css" />
+		<link rel="stylesheet" href="../jquery-easyui-1.5.4.1/themes/default/easyui.css" />
+        <script type="text/javascript" src="../proRoot.js"></script>
+<script>
+	function resetValue() {
+		$('#mmoduleName').val("");
+		$('#mparentId').val("");
+		//$('#mparentId').combobox("setValue", "");
+		$('#mmoduleWeight').val("");
+		$('#murl').val("");
+		$("#addProForm").form("clear");
+	}
+
+	//点击新增按钮
+	function addInfo() {
+
+		var selectedRows = $("#dg").datagrid('getSelections');
+		if (selectedRows.length != 1) {
+			$.messager.confirm('确认', '您要添加一个根模块吗？', function(r) {
+				if (r) {
+					$("#addpro_window").dialog("open").dialog("setTitle",
+							"添加模块");
+					resetValue();
+					$("#mparentId").val("0");
+					//$("#mparentId").combobox("setValue", 0);
+					url = ("http://localhost:8080/CRMthx/module/insertModule");
+				}
+			})
+			return;
+		}
+
+		var row = selectedRows[0];
+		$("#addpro_window").dialog("open").dialog("setTitle", "添加模块");
+		resetValue();
+		//$("#mparentId").combobox("setValue", row.mmoduleId);
+		$("#mparentId").val(row.mmoduleId)
+		url = ("http://localhost:8080/CRMthx/module/insertModule");
+	}
+	//点击编辑按钮
+	function updateModInfo() {
+		var selectedRows = $("#dg").datagrid('getSelections');
+		if (selectedRows.length != 1) {
+			$.messager.alert("系统提示", "请选择一条要编辑的数据！");
+			return;
+		}
+		var row = selectedRows[0];
+
+		if (row.mparentId == 0) {
+
+			$.messager.alert("系统提示", "根节点不能修改！");
+			return;
+		}
+		$("#updatepro_window").dialog("open").dialog("setTitle", "编辑产品信息");
+
+		$("#mmoduleId1").val(row.mmoduleId);
+
+		$("#mmoduleName1").val(row.mmoduleName);
+		$("#mmoduleWeight1").val(row.mmoduleWeight);
+		$("#mmoduleUrl1").val(row.mmoduleUrl);
+
+		url = "http://localhost:8080/CRMthx/module/updateModule?token=" + token;
+	}
+
+	function deleteProInfo() {
+
+		var selectedRows = $("#dg").datagrid('getSelections');
+		if (selectedRows.length != 1) {
+			$.messager.alert("系统提示", "请选择要删除的模块！");
+			return;
+		}
+
+		$.messager.confirm('确认', '您确认删除该模块吗？', function(r) {
+			if (r) {
+				$.post("http://localhost:8080/CRMthx/module/deleteModule", {
+					mmoduleId : selectedRows[0].mmoduleId,
+					token : token
+				}, function(res) {
+					if (res.success) {
+						$.messager.alert('状态', res.message);
+						$("#dg").treegrid("reload");
+
+						location.reload();
+					} else {
+						$.messager.alert('状态', res.message);
+					}
+
+				}, "json");
+
+			}
+		});
+
+	}
+	//点击新增或编辑窗体关闭按钮
+	function clearaddProForm() {
+		$("#addpro_window").window("close");
+		resetValue();
+	}
+	//点击新增窗体保存按钮
+	function saveAddPro() {
+		//$.post("http://localhost:8080/CRMthx/module/insertModule?module"+$("#addProForm").serialize(),{
+		$.post("http://localhost:8080/CRMthx/module/insertModule", {
+
+			token : token,
+			mparentId : $("#mparentId").val(),
+			mmoduleName : $("#mmoduleName").val(),
+			mmoduleWeight : $("#mmoduleWeight").val(),
+			mmoduleUrl : $("#murl").val()
+
+		}, function(res) {
+			/*if(result.errorMsg) {
+					$.messager.alert("系统提示", result.errorMsg);
+					return;
+				}*/
+
+			if (res.success) {
+				resetValue();
+				$.messager.alert("系统提示", res.message);
+
+				$("#addpro_window").dialog("close");
+				$("#dg").treegrid("reload");
+				//location.reload();
+			} else {
+				$.messager.alert("系统提示", res.message);
+
+			}
+
+		}, "json")
+
+		
+	}
+	//点击编辑窗体保存按钮
+	function saveUpdatePro() {
+		$('#updateProForm').form("submit", {
+			url : url,
+			onSubmit : function() {
+				return $(this).form("validate");
+			},
+			success : function(result) {
+				if (result.errorMsg) {
+					$.messager.alert("系统提示", result.errorMsg);
+					return;
+				} else {
+					resetValue();
+					$.messager.alert("系统提示", "保存成功");
+
+					$("#updatepro_window").dialog("close");
+
+					$("#dg").treegrid("reload");
+					location.reload();
+				}
+			}
+		});
+	}
+	//关闭按钮
+	function clearaddProForm() {
+		$("#updatepro_window").dialog("close");
+
+	}
+
+	function searchModule() {
+		/* $("#dg").treegrid({
+			url : globalData.root+"module/selectModule",
+			pageSize : 3,
+			pageList : [ 3, 6, 9, 12, 15, 18, 21 ],
+			queryParams : {
+				rolename : $("#moudleName").textbox("getValue"),
+				size:3,
+				page:1
+			}
+
+		}) */
+	}
+
+	$(function() {
+	//searchModule();
+
+	});
+</script>
+
+<table name="center" fitColumns="true" rownumbers="true" fit="true"
+	pagination="true" ctrlSelect="true" 
+	class="easyui-treegrid" id="dg" title="模块管理"
+	data-options="
+		url:'http://localhost:8090/module/queryModelTree',
+		title:'模块信息',
+		method:'post',
+		 toolbar:'#toolbar',
+		rownumbers: true,
+		singleSelect:true,
+		fitColumns:true,
+		idField: 'moduleid',
+		treeField: 'modulename'">
+	<thead>
+		<tr>
+			<th field="cb" checkbox="true"></th>
+			<th data-options="field:'moduleid'" width="10">模块编号</th>
+			<th data-options="field:'modulename',width:50">模块名称</th>
+			<th data-options="field:'modulepath',width:50">模块路径</th>
+			<th data-options="field:'moduleweight',width:80">模块权重</th>
+		</tr>
+	</thead>
+	<div id="tb" style="padding: 5px; height: auto">
+		<div style="margin-bottom: 5px">
+			模块名:<input class="easyui-textbox" id="moudleName"
+				style="width: 120px;" /> <a href="javascript:void(0)"
+				class="easyui-linkbutton" iconCls="icon-search"
+				onclick="searchModule()">检索</a>
+		</div>
+		<a href="javascript:void(0)" class="easyui-linkbutton"
+			data-require-permission='module:insertModule' iconCls="icon-add"
+			plain="true" onclick="addInfo()">新增</a> <a href="javascript:void(0)"
+			class="easyui-linkbutton"
+			data-require-permission='module:updateModule' iconCls="icon-edit"
+			plain="true" onclick="updateModInfo()">编辑</a> <a
+			href="javascript:void(0)" class="easyui-linkbutton"
+			data-require-permission='module:deleteModule' iconCls="icon-cut"
+			plain="true" onclick="deleteProInfo()">删除</a>
+
+	</div>
+</table>
+<!--新增按钮-->
+<div id="addpro_window" class="easyui-dialog"
+	data-options="modal:true,closed:true,iconCls:'icon-save'"
+	style="width: 500px; height: 300px; padding: 10px;" buttons="#menus">
+	<form id="addProForm" method="post">
+		<table cellpadding="5" style="margin: 20px auto;">
+			<input type="hidden" name="mmoduleId" id="mmoduleId"
+				data-options="required:true,validType:'minLength[1]'"></input>
+			<tr>
+
+				<td>模块名称:</td>
+				<td><input class="easyui-validatebox" type="text"
+					name="mmoduleName" id="mmoduleName"
+					data-options="required:true,validType:'minLength[1]'"></input></td>
+			</tr>
+			<input class="easyui-validatebox" type="hidden" id="mparentId"
+				name="mparentId" />
+
+			<!--<tr>
+				<td >所属模块:</td>
+				<td>
+					<input class="easyui-validatebox"  id="mparentId" name="mparentId" />
+					</td>
+			</tr>-->
+
+			<tr>
+				<td>模块权重:</td>
+				<td><input class="easyui-validatebox" type="text"
+					name="mmoduleWeight" id="mmoduleWeight"
+					data-options="required:true,validType:'intPlus'"></input></td>
+
+			</tr>
+
+			<tr>
+				<td>模块路径:</td>
+				<td><input type="text" class="easyui-validatebox" id="murl"
+					name="mmoduleUrl" data-options="required:true"></td>
+			</tr>
+		</table>
+	</form>
+</div>
+<div id="menus">
+	<a href="javascript:saveAddPro()" class="easyui-linkbutton"
+		data-require-permission='module:insertModule' iconCls="icon-ok">保存</a>
+	<a href="javascript:clearaddProForm()" class="easyui-linkbutton"
+		iconCls="icon-cancel">关闭</a>
+</div>
+<!--修改按钮-->
+<div id="updatepro_window" class="easyui-dialog"
+	data-options="modal:true,closed:true,iconCls:'icon-save'"
+	style="width: 500px; height: 300px; padding: 10px;" buttons="#menus1">
+	<form id="updateProForm" method="post">
+		<table cellpadding="5" style="margin: 20px auto;">
+			<input type="hidden" name="mmoduleId" id="mmoduleId1"
+				data-options="required:true,validType:'minLength[1]'"></input>
+			<tr>
+
+				<td>模块名称:</td>
+				<td><input class="easyui-validatebox" type="text"
+					name="mmoduleName" id="mmoduleName1"
+					data-options="required:true,validType:'minLength[1]'"></input></td>
+			</tr>
+
+			<tr>
+				<td>模块权重:</td>
+				<td><input class="easyui-validatebox" type="text"
+					name="mmoduleWeight" id="mmoduleWeight1"
+					data-options="required:true,validType:'intPlus'"></input></td>
+			</tr>
+
+			<tr>
+				<td>模块路径:</td>
+				<td><input type="text" class="easyui-validatebox"
+					id="mmoduleUrl1" name="mmoduleUrl" data-options="required:true"></td>
+			</tr>
+		</table>
+	</form>
+</div>
+
+<div id="menus1">
+	<a href="javascript:saveUpdatePro()" class="easyui-linkbutton"
+		data-require-permission='module:updateModule' iconCls="icon-ok">保存</a>
+	<a href="javascript:clearaddProForm()" class="easyui-linkbutton"
+		iconCls="icon-cancel">关闭</a>
+</div>
+</div>

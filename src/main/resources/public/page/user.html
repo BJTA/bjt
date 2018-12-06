@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>用户管理页面</title>
+
+<meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
+<meta http-equiv="description" content="this is my page">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<script type="text/javascript" src="../jquery-easyui-1.5.4.1/jquery.min.js"></script>
+<script type="text/javascript"	src="../jquery-easyui-1.5.4.1/jquery.easyui.min.js"></script>
+<script type="text/javascript"	src="../jquery-easyui-1.5.4.1/locale/easyui-lang-zh_CN.js"></script>
+<link rel="stylesheet" href="../jquery-easyui-1.5.4.1/themes/icon.css" />
+<link rel="stylesheet"	href="../jquery-easyui-1.5.4.1/themes/default/easyui.css" />
+<script type="text/javascript" src="../proRoot.js"></script>
+<script type="text/javascript" src="../easyUIvalidate.js"></script>
+<style type="text/css">
+.datagrid-td-rownumber {
+	height: 26px;
+}
+</style>
+<script>
+			
+
+			function resetValue() {
+
+				$("#addProForm").form("clear");
+
+			}
+			//点击新增按钮
+			function addInfo() {
+				resetValue();
+				$("#addpro_window").dialog("open").dialog("setTitle", "添加用户");
+
+				
+
+			}
+
+			//点击新增窗体关闭按钮
+			function clearaddProForm() {
+				$("#addpro_window").window("close");
+				resetValue();
+
+			}
+			//点击编辑窗体关闭按钮
+			function clearaddProForm1() {
+				$("#updatepro_window").window("close");
+				resetValue();
+
+			}
+
+			//点击新增窗体保存按钮
+			function saveAddPro() {
+
+				$.post(globalData.root+"user/adduser", {
+
+					loginname: $('#uuserName').val()
+					},
+					function(res) {
+						if(res.success) {
+							$.messager.alert("系统提示",res.message);
+							//重新加载当前的datagrid(刷新当前页)
+							$("#dg").datagrid("reload");
+						} else {
+							$.messager.alert("系统提示", res.remark);
+
+						}
+					}, "json");
+
+			}
+			//点击编辑按钮
+			function updateModInfo() {
+				var selectedRows = $("#dg").datagrid('getSelections');
+				if(selectedRows.length != 1) {
+					$.messager.alert("系统提示", "请选择要编辑的用户！");
+					return;
+				}
+				
+				var row = selectedRows[0];
+				$("#uuserId1").val(row.userid);
+				$("#uuserName1").val(row.loginname);
+				$("#uuserEmail1").val(row.protectemail);
+				$("#uuserTelephone1").val(row.protectmtel);
+				$("#updatepro_window").dialog("open").dialog("setTitle", "编辑用户信息");
+
+			
+
+				}
+
+			//点击编辑窗体保存按钮
+			function saveUpdatePro() {
+				//alert("要提交啦");
+				$('#updateProForm').form("submit", {
+					url:globalData.root+"user/updateuser",
+					onSubmit: function() {
+						return $(this).form("validate");
+					},
+					success: function(result) {
+						if(result.errorMsg) {
+							$.messager.alert("系统提示", result.errorMsg);
+							clearaddProForm();
+							return;
+						} else {
+							clearaddProForm();
+							$.messager.alert("系统提示", "保存成功");
+							$("#dg").datagrid("reload");
+						}
+					}
+				});
+
+			}
+			
+			//重置密码
+			function formatterResetPassword(value, row, index) {
+				return "<a style='cursor: pointer;' iconCls='icon-reload' class='easyui-linkbutton' data-require-permission='user:resetPwd'  onclick='resetPassword(" + index + ")'>重置密码</a>";
+			}
+			var uid;
+			//点击重置
+			function resetPassword(index) {
+
+				//将当前行数据填入表单
+				var data = $("#dg").datagrid("getData"); //获取datagrid对应的json数据（对象集合）
+				var row = data.rows[index];
+
+				$.messager.confirm('确认', "您确认要重置 " + row.loginname + " 的密码吗？", function(r) {
+
+					if(r) {
+						uid = row.userid;
+						var uname = row.loginname;
+						$.post(globalData.root+"user/resetPwd", {
+							uid: uid,
+							uname:uname
+							},
+							function(res) {
+								if(res.success) {
+									$.messager.alert("系统提示", res.message);
+									$('#pwdForm').form('clear');
+									$("#pwd_window").window("close");
+									$("#dg").datagrid("reload"); //通过调用reload方法，让datagrid刷新显示数据
+									
+									if( res.message == row.userid+"成功")
+										window.top.location.href = "../login.html"
+								} else {
+									$.messager.alert("系统提示", res.message);
+								}
+							}, "json");
+
+					}
+
+				})
+
+			}
+
+			function closeresetpwdForm() {
+				$("#pwd_window").window("close");
+			}
+
+			
+
+			//锁定和解锁用户
+			function formatterLockUser(value, row, index) {
+				return "<a style='cursor: pointer;' iconCls='icon-lock'  class='easyui-linkbutton' data-require-permission='user:lockUser' onclick='lockUser(" + index + ")'>锁定用户</a>    <a style='cursor: pointer;' iconCls='icon-unlock' class='easyui-linkbutton' data-require-permission='user:lockUser' onclick='unlockUser(" + index + ")'>解锁用户</a>";
+			}
+			//锁定用户
+			function lockUser(index) {
+
+				var data = $("#dg").datagrid("getData"); //获取datagrid对应的json对象集合（再来一遍）。
+				var row = data.rows[index]; //获取第index行对应的json对象（再来一遍）。
+				
+				if(data.rows[index].islockout) {
+					$.messager.alert("警告", "已经是锁定状态！")
+					return;
+				}
+				$.messager.confirm('确认', '您确认锁定' + row.loginname + '用户吗？', function(r) {
+
+					if(r) {
+						$.post(globalData.root+"user/updateUserState", {
+							userid: row.userid,
+							islockout: "1"
+						}, function(lockUser) {
+							if(lockUser.success) {
+								$.messager.alert('系统提示', "操作成功");
+								$("#dg").datagrid("reload");
+							} else {
+								$.messager.alert('系统提示', "操作失败，不能修改自己的状态");
+							}
+							$("#dg").datagrid("reload"); //通过调用reload方法，让datagrid刷新显示数据
+						}, "json");
+
+					}
+				});
+
+			}
+			//解锁用户
+			function unlockUser(index) {
+				var data = $("#dg").datagrid("getData"); //获取datagrid对应的json对象集合（再来一遍）。
+				var row = data.rows[index]; //获取第index行对应的json对象（再来一遍）。
+			
+				if(!data.rows[index].islockout) {
+					$.messager.alert("警告", "已经是解锁状态！")
+					return;
+				}
+
+				$.messager.confirm('确认', '您确认解锁此用户吗？', function(r) {
+					if(r) {
+						$.post(globalData.root+"user/updateUserState", {
+							userid: row.userid,
+							islockout: "0"
+						}, function(lockUser) {
+							if(lockUser.success) {
+								$.messager.alert('系统提示', "操作成功");
+								$("#dg").datagrid("reload");
+							} else {
+								$.messager.alert('系统提示', "操作失败，不能修改自己的状态");
+							}
+							$("#dg").datagrid("reload"); //通过调用reload方法，让datagrid刷新显示数据
+						}, "json");
+
+					}
+				});
+			}
+
+			//给用户设置角色
+			function formatterSetRole(value, row, index) {
+				return "<a style='cursor: pointer;' iconCls='icon-set' class='easyui-linkbutton' data-require-permission='user:setRole' onclick='showRoles(" + index + ")'>设置</a>";
+			}
+
+			var username;
+			var useid;
+			var inde;
+			//显示所有角色，然后给用户添加或移除角色·
+			function showRoles(index) {
+				
+				var data = $("#dg").datagrid("getData"); //获取datagrid对应的json数据（对象集合）
+				var row = data.rows[index];
+				username = row.loginname;
+				useid=row.userid;
+				 
+				$("#diaSetUser").dialog({
+					closed: false,
+					title: "您正在设置" + row.loginname + "的角色信息"
+				});
+				inde=index;
+				getRoles(index);	
+				
+				getRolesById(index);
+
+			}
+
+			//选择向右
+			function saveRole() {
+				var nodes = $("#setuser").datagrid('getSelected'); //获取选中的节点
+				console.log(nodes);
+				if(nodes != null) {
+					$.post(globalData.root+"user/czUser", {
+						userid: useid,
+						roleid: nodes.roleid,
+			            cz:"add"
+					}, function(res) {
+						if(res.success) {
+							getRoles(inde);	
+							getRolesById(inde);
+							window.top.loadTree();
+						} else {
+							$.messager.alert("消息", "设置成功");
+						}
+					}, "json");
+				} else {
+					$.messager.alert("消息", "请先选择角色再点击按钮");
+				}
+			}
+			//清除角色向左
+			function clearRole() {
+				var nodes = $("#getroles").datagrid('getSelected'); //获取选中的节点
+				console.log(nodes);
+				if(nodes != null) {
+					$.post(globalData.root+"user/czUser", {
+						userid: useid,
+						roleid: nodes.roleid,
+			            cz:"remove"
+					}, function(res) {
+						if(res.success) {
+							getRoles(inde);	
+							getRolesById(inde);
+							$.messager.alert("消息", res.message);
+							window.top.loadTree();
+						} else {
+							$.messager.alert("消息", res.message);
+						}
+					}, "json");
+				} else {
+					$.messager.alert("消息", "请先选择角色再点击按钮");
+				}
+			}
+			//获取自己没有的角色
+			function getRoles(index) {
+				var data = $("#dg").datagrid("getData"); 
+				var row = data.rows[index];
+				//alert(row.userid);
+				$("#setuser").datagrid({
+					url: globalData.root+"role/queryMyNotRoles",
+					formatter: function(node) {
+						return node.rolename;
+					},
+					queryParams: {
+						userid: row.userid
+					}
+				});
+			}
+			//获取当前用户的角色信息
+			function getRolesById(index) {
+				var data = $("#dg").datagrid("getData"); 
+				var row = data.rows[index];
+				//alert(row.userid);
+				$("#getroles").datagrid({
+					url:  globalData.root+"role/queryMyRoles",
+					formatter: function(node) {
+						return node.rolename;
+					},
+					queryParams: {
+						userid: row.userid
+					}
+				});
+			}
+
+			//删除用户
+			function deleteUserInfo() {
+
+				var selectedRows = $("#dg").datagrid('getSelections');
+				if(selectedRows.length != 1) {
+					$.messager.alert("系统提示", "请选择要删除的用户！");
+					return;
+				}
+				/* if(Userid == selectedRows[0].uuserId) {
+					$.messager.alert("警告", "不能删除自己")
+					return;
+
+				} */
+
+				$.messager.confirm('确认', '您确认彻底删除' + selectedRows[0].loginname + '用户吗？', function(r) {
+					if(r) {
+						$.post(globalData.root+"user/deleteuserByid", {
+							userid: selectedRows[0].userid,
+						}, function(res) {
+							if(res.success) {
+								$.messager.alert('状态', res.message);
+
+							} else {
+								$.messager.alert('状态', res.remark);
+							}
+
+							$("#dg").datagrid("load");
+
+						}, "json");
+
+					}
+				});
+
+			}
+
+			function formatterIsLockout(v, r, i) {
+				return v == 1 ? "是" : "否";
+
+			}
+			//有条件的检索用户
+			function searchUser() {
+				var checktime = $("#beginTime").datebox("getValue") <= $("#endTime").datebox("getValue")
+                var checktime1 = $("#startLastlogintime").datebox("getValue") <= $("#endLastlogintime").datebox("getValue")
+				if(checktime&&checktime1) {
+					$("#dg").datagrid({
+						url: globalData.root+'user/selectUser', //数据接口的地址
+						queryParams: { //要发送的参数列表
+							loginname: $("#userName").textbox("getValue"),
+							startCreatetime: $("#beginTime").datebox("getValue"),
+							endCreatetime: $("#endTime").datebox("getValue"),
+							startLastlogintime: $("#startLastlogintime").datebox("getValue"),
+							endLastlogintime: $("#endLastlogintime").datebox("getValue"),
+							protectmtel:$("#protectmtel").textbox("getValue"),
+							islockout: $("#islock").combobox("getValue"),
+							page:1,
+							size:10
+						}
+					});
+
+				} else {
+					$.messager.alert("提示", "终止时间要晚于起止时间")
+				}
+
+			}
+
+			$(function() {
+				searchUser();
+
+			});
+		</script>
+</head>
+
+<body>
+	<table name="center" class="easyui-datagrid" id="dg" title=" 用 户 列 表"
+		style="width: 300; height: 400;"
+		data-options="rownumbers:true,singleSelect:true,method:'post',pagination:true,toolbar:'#tb',size:10">
+		<thead>
+			<tr>
+				<th field="cb" checkbox="true"></th>
+				<th data-options="field:'userid'" width="80">用户编号</th>
+				<th data-options="field:'loginname',width:100">用户名称</th>
+				<th data-options="field:'protectemail',width:210">邮箱</th>
+				<th data-options="field:'protectmtel',width:130">手机号</th>
+				<th
+					data-options="field:'islockout',width:100,formatter:formatterIsLockout">是否锁定</th>
+
+				<th data-options="field:'createtime',width:160">创建时间</th>
+
+				<th data-options="field:'lastlogintime',width:160">最后登录时间</th>
+
+				<th
+					data-options="field:'setPassword',width:100,align:'center',formatter:formatterResetPassword">操作</th>
+				<th
+					data-options="field:'setLock',width:200,align:'center',formatter:formatterLockUser">用户操作</th>
+				<th
+					data-options="field:'setRoleAction',width:90,align:'center',formatter:formatterSetRole">角色</th>
+
+			</tr>
+		</thead>
+		<div id="tb" style="padding: 5px; height: auto">
+			<div style="margin-bottom: 5px;">
+
+				用户名:<input class="easyui-textbox" id="userName"	style="width: 120px;" />
+				 创建时间: <input class="easyui-datebox"		id="beginTime" style="width: 120px;" />-<input class="easyui-datebox" id="endTime" style="width: 120px;" /> 
+				 最近登录时间: <input class="easyui-datebox"		id="startLastlogintime" style="width: 120px;" />-<input class="easyui-datebox" id="endLastlogintime" style="width: 120px;" /> 
+				密保手机号:<input class="easyui-textbox" id="protectmtel"	style="width: 120px;" />
+				
+				是否锁定:
+				<select class="easyui-combobox" id="islock">
+					<option value="">请选择</option>
+					<option value="1">是</option>
+					<option value="0">否</option>
+					
+				</select> 
+				<!-- 排序: <select class="easyui-combobox" id="orderby">
+					<option value="">请选择</option>
+					<option value="u_userLastLoginTime">最后登录时间</option>
+					<option value="u_userCrateTime">创建时间</option>
+				</select>  -->
+				<a href="javascript:void(0)" class="easyui-linkbutton"	iconCls="icon-search" onclick="searchUser()">检索</a>
+			</div>
+			<a href="javascript:void(0)" class="easyui-linkbutton"
+				data-require-permission='user:addUsers' iconCls="icon-add"
+				plain="true" onclick="addInfo()">创建</a> <a href="javascript:void(0)"
+				class="easyui-linkbutton" data-require-permission='user:updUsers'
+				iconCls="icon-edit" plain="true" onclick="updateModInfo()">编辑</a> <a
+				href="javascript:void(0)" class="easyui-linkbutton"
+				data-require-permission='user:deleteUser' iconCls="icon-cut"
+				plain="true" onclick="deleteUserInfo()">删除</a>
+
+		</div>
+
+	</table>
+	<!--新增按钮-->
+	<div id="addpro_window" class="easyui-dialog"
+		data-options="modal:true,closed:true,iconCls:'icon-save'"
+		style="width: 500px; height: 300px; padding: 10px;" buttons="#menus">
+		<form id="addProForm" method="post">
+			<table cellpadding="5" style="margin: 20px auto;">
+				<input type="hidden" name="uuserId" id="uuserId"
+					data-options="required:true,validType:'minLength[1]'"></input>
+				<tr>
+
+					<td>登录名:</td>
+					<td><input class="easyui-textbox" type="text" name="uuserName"
+						id="uuserName"
+						data-options="required:true,validType:'minLength[1]'"></input></td>
+				</tr>
+
+				<!-- <tr>
+					<td>邮箱:</td>
+					<td><input class="easyui-validatebox" type="text"
+						name="uuserEmail" id="uuserEmail"
+						data-options="required:true,validType:'email'"></input></td>
+				</tr>
+
+				<tr>
+					<td>手机号:</td>
+					<td><input type="text" class="easyui-validatebox"
+						id="uuserTelephone" name="uuserTelephone"
+						data-options="required:true,validType:'mobile'"></td>
+				</tr> -->
+			</table>
+		</form>
+	</div>
+	<div id="menus">
+		<a href="javascript:saveAddPro()" class="easyui-linkbutton"
+			iconCls="icon-ok">保存</a> <a href="javascript:clearaddProForm()"
+			class="easyui-linkbutton" iconCls="icon-cancel">关闭</a>
+	</div>
+
+	<!--修改按钮-->
+	<div id="updatepro_window" class="easyui-dialog"
+		data-options="modal:true,closed:true,iconCls:'icon-save'"
+		style="width: 500px; height: 300px; padding: 10px;" buttons="#menus1">
+		<form id="updateProForm" method="post">
+			<table cellpadding="5" style="margin: 20px auto;">
+				<input type="hidden" name="userid" id="uuserId1"
+					data-options="required:true,validType:'minLength[1]'"></input>
+				<tr>
+
+					<td>登录名:</td>
+					<td><input class="easyui-validatebox" readonly="true"
+						type="text" name="loginname" id="uuserName1"
+						data-options="required:true,validType:'length[1,11]'"></input></td>
+				</tr>
+
+				<tr>
+					<td>邮箱:</td>
+					<td><input class="easyui-validatebox" type="text"
+						name="protectemail" id="uuserEmail1"
+						data-options="required:true,validType:'email'"></input></td>
+				</tr>
+
+				<tr>
+					<td>手机号:</td>
+					<td><input type="text" class="easyui-validatebox"
+						id="uuserTelephone1" name="protectmtel"
+						data-options="required:true,validType:'mobile'"></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<div id="menus1">
+		<a href="javascript:saveUpdatePro()" class="easyui-linkbutton"
+			iconCls="icon-ok">保存</a> <a href="javascript:clearaddProForm1()"
+			class="easyui-linkbutton" iconCls="icon-cancel">关闭</a>
+	</div>
+
+	<!--重置密码-->
+	<div id="pwd_window" class="easyui-window" title="重置密码"
+		data-options="modal:true,closed:true,iconCls:'icon-save'"
+		style="width: 500px; height: 300px; padding: 10px;">
+		<form id="pwdForm">
+			<table cellpadding="5" style="margin: 20px auto;">
+				<tr>
+					<td colspan="2" align="center">
+						<div id="un"></div>
+					</td>
+				</tr>
+				<tr>
+					<td>新密码:</td>
+					<td><input class="easyui-validatebox" type="password"
+						name="uuserPassWord" id="newp" data-options="required:true"validType: 'minLength[6]' "></input></td>
+				</tr>
+				<tr>
+					<td>确认密码:</td>
+					<td><input class="easyui-validatebox " type="password "
+						name="newp2 " id="newp2 " data-options="required:true "
+						validType="equals[ 'newp'] "></input></td>
+				</tr>
+
+			</table>
+		</form>
+		<div style="text-align: center; padding: 5px">
+			<a href="javascript:void(0) " class="easyui-linkbutton "
+				type="button " onclick="submitresetpwdForm() ">保存</a> <a
+				href="javascript:void(0) " class="easyui-linkbutton "
+				onclick="closeresetpwdForm() ">取消</a>
+		</div>
+	</div>
+
+
+	<!--设置用户权限-->
+	<div id="diaSetUser" class="easyui-dialog"
+		data-options="modal:true,closed:true,iconCls:'icon-save' "
+		style="width: 500px; height: 500px; padding: 10px;">
+		<div style="width: 200px; height: 400px; float: left;">
+			<table name="setuser" class="easyui-datagrid" id="setuser"
+				title="系统角色 " style="width: 200px;"
+				data-options="singleSelect:true,rownumbers:true,method: 'post' ">
+				<thead>
+					<tr>
+						<th data-options="field: 'roleid',width:280,hidden:true ">角色ID</th>
+						<th data-options="field: 'rolename',width:100 ">名称</th>
+					</tr>
+				</thead>
+			</table>
+		</div>
+		<div style="float: left; width: 20px; margin: 200px 5px;">
+			<a href="javascript:void(0) " class="easyui-linkbutton "
+				type="button " onclick="saveRole() ">>></a><br /> <a
+				href="javascript:void(0) " class="easyui-linkbutton "
+				onclick="clearRole() "><<</a>
+		</div>
+		<div style="width: 200px; height: 400px; float: right;">
+			<table name="getroles" class="easyui-datagrid " id="getroles"
+				title="当前用户的角色 " style="width: 200px;"
+				data-options="singleSelect:true,rownumbers:true,method: 'post' ">
+				<thead>
+					<tr>
+						<th data-options="field: 'roleid',width:280,hidden:true ">角色ID</th>
+						<th data-options="field: 'rolename',width:100 ">名称</th>
+					</tr>
+				</thead>
+			</table>
+		</div>
+
+
+	</div>
+
+</body>
+</html>

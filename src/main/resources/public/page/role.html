@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title></title><script type="text/javascript" src="../jquery-easyui-1.5.4.1/jquery.min.js" ></script>
+        <script type="text/javascript" src="../jquery-easyui-1.5.4.1/jquery.easyui.min.js" ></script>
+        <script type="text/javascript" src="../jquery-easyui-1.5.4.1/locale/easyui-lang-zh_CN.js" ></script>
+        <link rel="stylesheet" href="../jquery-easyui-1.5.4.1/themes/icon.css" />
+		<link rel="stylesheet" href="../jquery-easyui-1.5.4.1/themes/default/easyui.css" />
+        <script type="text/javascript" src="../proRoot.js"></script>
+		
+		<style type="text/css">
+			.datagrid-td-rownumber {
+				height: 26px;
+			}
+		</style>
+		<script>
+			
+
+			function searchRole() {
+
+				$("#relosDg").datagrid({
+					url: globalData.root+'role/selectRole', //数据接口的地址
+					queryParams: { //要发送的参数列表
+						rolename: $("#rroleName").textbox("getValue"),
+						pageSize:10,
+						page:1
+					}
+				});
+			}
+			$(function() {
+				searchRole();
+			});
+
+			//点击新增按钮
+			function addInfo() {
+				$('#ename').val("");
+				$("#adduser_window").window("open");
+				$('#ename').val("");
+			}
+			//点击新增窗口的取消按钮
+			function clearUserForm() {
+				$("#adduser_window").window("close");
+
+			}
+			//点击新增窗体保存按钮
+			function submitUserForm() {
+				var flag = $("#adduserForm").form("validate");
+				var name = $("#ename").val();
+				if(flag) {
+					$.post(globalData.root+"role/addroles", {
+						rolename: name
+						},
+						function(res) {
+							if(res.success) {
+								$.messager.alert("系统提示", res.message);
+								$("#adduser_window").window("close");
+								$("#relosDg").datagrid("reload"); //通过调用reload方法，让datagrid刷新显示数据
+
+							} else {
+								$.messager.alert("系统提示", res.remark);
+							}
+						}, "json");
+				}
+			}
+			//编辑角色
+			function formatterUpRoles(value, row, index) {
+				return " <a style='cursor: pointer;' class='easyui-linkbutton' data-require-permission='Croles:updateCroles' iconCls='icon-edit' onclick='updateRoleForm(" + index + ")'>编辑</a>";
+			}
+			//删除角色
+			function formatterDeRoles(value, row, index) {
+				return "<a style='cursor: pointer;' class='easyui-linkbutton' data-require-permission='Croles:deleteCroles' iconCls='icon-cut'  onclick='deleteInfo(" + index + ")'>删除</a>";
+			}
+			//设置角色
+			function formatterSetRoles(value, row, index) {
+				 /*  <a style='cursor: pointer;' iconCls='icon-permission' class='easyui-linkbutton' data-require-permission='Croles:insertPermissionGiveRole'  onclick='setRolePerm(" + index + ")'>设置操作权限</a> */
+				return "<a style='cursor: pointer;' class='easyui-linkbutton' data-require-permission='Croles:setMuduleGiveRole' iconCls='icon-set'  onclick='setRightData(" + index + ")'>设置模块</a>  ";
+			}
+			var cur_roleId;
+
+			//设置角色模块信息
+			function setRightData(index) {
+				var data = $("#relosDg").datagrid("getData");
+				var row = data.rows[index];
+				cur_roleId = row.roleid;
+				$("#diaSetRight").dialog({
+					closed: false,
+					title: "您正在设置" + row.rolename
+
+				});
+
+				$.post(globalData.root+"role/getRoleModel", {
+
+					roleId: row.roleid
+				}, function(res) {
+
+					$("#rightTree").tree({
+
+						data: res.data
+
+					})
+				}, "json")
+
+			}
+
+			//设置角色操作权限信息
+			function setRolePerm(index) {
+				var data = $("#relosDg").datagrid("getData");
+				var row = data.rows[index];
+				cur_roleId = row.rroleId;
+				$("#diaSetRight1").dialog({
+					closed: false,
+					title: "您正在设置" + row.rroleName
+				});
+				$("#rightTree1").tree({
+					url: "http://localhost:8080/CRMthx/permission/queryNode",
+					queryParams: {
+						rId: row.rroleId,
+						token: token
+					},
+					checkbox: true,
+					lines: true
+
+				});
+
+			}
+			//点击保存设置角色模块
+			function setRoleForm() {
+				var nodes = $("#rightTree").tree("getChecked", ['checked', 'indeterminate']);
+				console.log(nodes);
+				if(nodes.length != 0) {
+					var s = "";
+					for(var i = 0; i < nodes.length; i++) {
+						if(s == "") {
+							s += nodes[i].id;
+						} else {
+							s += ",";
+							s += nodes[i].id;
+						}
+					}
+					console.log(s);
+					$.post("http://localhost:8080/CRMthx/Croles/setMuduleGiveRole", {
+						rm_moduleId: s,
+						rId: cur_roleId,
+						token: token
+					}, function(res) {
+						if(res.success) {
+							$.messager.alert("消息", "设置模块成功！");
+							$("#diaSetRight").dialog({
+								closed: true
+							});
+							cur_roleId = "";
+							window.top.loadTree();
+						} else {
+							$.messager.alert("消息", res.message);
+						}
+					}, "json");
+				} else {
+					$.messager.alert("消息", "请先选择模块再点击保存");
+				}
+
+			}
+
+			//点击保存设置角色权限
+			function setRoleForm1() {
+				var nodes = $("#rightTree1").tree("getChecked", ['checked', 'indeterminate']);
+				console.log(nodes);
+				if(nodes.length != 0) {
+					var s = "";
+					for(var i = 0; i < nodes.length; i++) {
+						if(s == "") {
+							s += nodes[i].id;
+						} else {
+							s += ",";
+							s += nodes[i].id;
+						}
+						s = s.replace("undefined,", "")
+					}
+					console.log(s);
+
+					$.post("http://localhost:8080/CRMthx/Croles/insertPermissionGiveRole", {
+						premisstionis: s,
+						uid: Userid,
+						rId: cur_roleId,
+						token: token
+					}, function(res) {
+						if(res.success) {
+							var msg = res.message;
+
+							if(msg == "0") {
+
+								window.top.location.href = "../login.html"
+							} else {
+								$.messager.alert("消息", res.message);
+								$("#diaSetRight").dialog({
+									closed: true
+								});
+								cur_roleId = "";
+								$("#diaSetRight1").dialog({
+									closed: true
+								});
+							}
+
+						} else {
+							$.messager.alert("消息", res.message);
+						}
+					}, "json");
+				} else {
+					$.messager.alert("消息", "请先选择权限再点击保存");
+				}
+
+			}
+
+			var rid;
+			var oldname;
+			//修改角色名称
+			function updateRoleForm(index) {
+				//将当前行数据填入表单
+				var data = $("#relosDg").datagrid("getData"); //获取datagrid对应的json数据（对象集合）				
+				var row = data.rows[index]; //获取第index行对应的json对象		
+
+				rid = row.roleid;
+				oldname = row.rolename;
+				$("#updateroleForm").form("load", row); //使用form的load方法，快速将json对象的数据显示到 弹出窗口的表单元素之中。
+
+				$("#updaterole_window").window("open"); //打开窗口。
+
+			}
+
+			function clearRoleForm() {
+				$("#updaterole_window").window("close");
+			}
+			//点击编辑弹框的保存按钮
+			function submitRoleForm() {
+
+				var name = $("#name").val();
+				if(oldname == name) { //没有修改的情况下
+					$.messager.alert('系统提示', "别闹了，你都没改");
+					return;
+				}
+
+				$.post(globalData.root+"role/updateroles", {
+
+					rolename: name,
+					roleid: rid
+					},
+					function(res) {
+
+						if(res.success) {
+							$.messager.alert('系统提示', res.message);
+
+							$("#updaterole_window").window("close");
+
+							$("#relosDg").datagrid("reload");
+						} else {
+							$.messager.alert('系统提示', res.remark);
+						}
+
+					}, "json");
+			}
+
+			//点击删除
+			function deleteInfo(index) {
+				var data = $("#relosDg").datagrid("getData");
+				var row = data.rows[index];
+				$.messager.confirm('删除确认', '您确认删除此角色吗？', function(r) {
+					if(r) {
+						$.post(globalData.root+"role/deleteRoleByid", {
+							roleid: row.roleid
+						}, function(res) {
+							if(res.success) {
+								$.messager.alert('系统提示', res.message);
+								$("#relosDg").datagrid("load");
+							} else {
+								$.messager.alert('系统提示', res.remark);
+							}
+						}, "json");
+
+					}
+				});
+
+			}
+		</script> 
+	</head>
+
+	<body>
+		<table name="roles" class="easyui-datagrid" id="relosDg" title="角色列表" style="width:300;height:400" data-options="rownumbers:true,singleSelect:true,pagination:true,method:'post',toolbar:'#tb',pageSize:10">
+			<thead>
+				<tr>
+					<th data-options="field:'roleid',width:280,hidden:true">角色ID</th>
+					<th data-options="field:'rolename',width:100">角色名称</th>
+					<th data-options="field:'setupdRole',width:100,align:'center',formatter:formatterUpRoles">操作</th>
+					<th data-options="field:'setdelRole',width:100,align:'center',formatter:formatterDeRoles">操作</th>
+					<th data-options="field:'setRole',width:230,align:'center',formatter:formatterSetRoles">权限</th>
+
+				</tr>
+			</thead>
+		</table>
+
+		<div id="tb" style="padding:5px; height:auto">
+			<div style="margin-bottom:5px">
+				角色名:<input class="easyui-textbox" id="rroleName" style="width: 120px;" />
+				<a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-search" onclick="searchRole()">检索</a>
+				<a href="javascript:void(0)" class="easyui-linkbutton" data-require-permission='Croles:addCroles' iconCls="icon-add" plain="true" onclick="addInfo()">新增</a>
+			</div>
+
+		</div>
+		<!--添加弹框-->
+		<div id="adduser_window" class="easyui-window" title="新增角色名称" data-options="modal:true,closed:true,iconCls:'icon-save'" style="width:500px;height:300px;padding:10px;">
+			<form id="adduserForm">
+				<table cellpadding="5" style="margin: 20px auto;">
+					<tr>
+						<td>角色名称:</td>
+						<td><input class="easyui-validatebox" type="text" name="rolename" id="ename" data-options="required:true"></input>
+						</td>
+					</tr>
+
+				</table>
+			</form>
+			<div style="text-align:center;padding:5px">
+				<a href="javascript:void(0)" class="easyui-linkbutton" type="button" data-require-permission='Croles:addCroles' onclick="submitUserForm()">保存</a>
+				<a href="javascript:void(0)" class="easyui-linkbutton" onclick="clearUserForm()">取消</a>
+			</div>
+		</div>
+		<!--修改弹框-->
+		<div id="updaterole_window" class="easyui-window" title="修改角色名称" data-options="modal:true,closed:true,iconCls:'icon-save'" style="width:500px;height:300px;padding:10px;">
+			<form id="updateroleForm">
+				<table cellpadding="5" style="margin: 20px auto;">
+					<tr>
+						<td>角色名称:</td>
+						<td><input class="easyui-textbox" type="text" name="rolename" id="name" data-options="required:true"></input>
+						</td>
+					</tr>
+
+				</table>
+			</form>
+			<div style="text-align:center;padding:5px">
+				<a href="javascript:void(0)" class="easyui-linkbutton" type="button" data-require-permission='Croles:updateCroles' onclick="submitRoleForm()">保存</a>
+				<a href="javascript:void(0)" class="easyui-linkbutton" onclick="clearRoleForm()">取消</a>
+			</div>
+		</div>
+
+		<!--设置角色模块-->
+		<div id="diaSetRight" class="easyui-dialog" data-options="modal:true,closed:true,iconCls:'icon-save',buttons:'#bb'" style="width:400px;height:500px;padding:10px;">
+			<ul id="rightTree" data-options="checkbox:true" style=" width:200px;margin: 0 auto;">
+
+			</ul>
+		</div>
+		<div id="bb">
+			<a href="javascript:void(0)" id="setRole" class="easyui-linkbutton" data-require-permission='Croles:setMuduleGiveRole' onclick="setRoleForm()">保存</a>
+		</div>
+
+		<!--设置角色权限-->
+		<div id="diaSetRight1" class="easyui-dialog" data-options="modal:true,closed:true,iconCls:'icon-save',buttons:'#bb1'" style="width:400px;height:500px;padding:10px;">
+			<ul id="rightTree1" style=" width:200px;margin: 0 auto;">
+
+			</ul>
+		</div>
+		<div id="bb1">
+			<a href="javascript:void(0)" id="setRole" class="easyui-linkbutton" data-require-permission='Croles:insertPermissionGiveRole' onclick="setRoleForm1()">保存</a>
+		</div>
+
+	</body>
+
+</html>

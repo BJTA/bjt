@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<script type="text/javascript" src="../jquery-easyui-1.5.4.1/jquery.min.js" ></script>
+        <script type="text/javascript" src="../jquery-easyui-1.5.4.1/jquery.easyui.min.js" ></script>
+        <script type="text/javascript" src="../jquery-easyui-1.5.4.1/locale/easyui-lang-zh_CN.js" ></script>
+        <link rel="stylesheet" href="../jquery-easyui-1.5.4.1/themes/icon.css" />
+		<link rel="stylesheet" href="../jquery-easyui-1.5.4.1/themes/default/easyui.css" />
+
+    	<script type="text/javascript" src="../netStu.js"></script>
+		<script type="text/javascript" src="../proRoot.js"></script>
+		
+		<style>
+			.datagrid-td-rownumber{height: 26px;}
+			#createStu table td .red {
+				color: red;
+			}
+		</style>
+		<script>
+			
+			$(function() {
+				searchComputerInfo();				
+			});
+				
+			//查询计算机信息
+			function searchComputerInfo() {
+				$("#dg").datagrid({
+					url: globalData.root+'computer/queryComputer',
+					queryParams: { //要发送的参数列表
+					"cname":$("#cname").textbox('getValue'),
+					"cip":$("#cip").textbox('getValue'),
+					"creadroomid":$("#creadroomid").textbox('getValue')
+						
+					},
+			        onLoadSuccess:function(){
+			        $('.easyui-linkbutton').linkbutton();
+			        }
+				});
+		}
+			
+		</script>
+		
+		<script>
+			
+			//新增一个新计算机
+			function AddComputer() {
+				$("#addComputer_Form").form("clear");
+				$("#createComputer_window").window("open");
+			}
+			
+            //提交新计算机对象
+			function createComputer() {
+			//alert($("#creadroomid_add").combobox('getValue'));
+				var flag = $("#addComputer_Form").form("validate");
+				if(flag){
+			$.post(globalData.root+"Computer/addOneComputer", {
+					"cname" : $("#cname_add").textbox('getValue'),
+					"cip" : $("#cip_add").textbox('getValue'),
+					"creadroomid" : $("#creadroomid_add").combobox('getValue'),
+					"cremark" : $("#cremark_add").textbox('getValue')
+				}, function(date) {
+					if (date.success) {
+						$.messager.alert("提示", date.message);
+						$("#dg").datagrid("reload");
+					}
+					$.messager.alert("提示", date.message);
+					$("#addComputer_Form").form("clear");
+					$("#createComputer_window").window("close");
+				}, "json");
+                 }else{
+                 	$.messager.alert("提示", "请按要求填写数据");
+                 }
+			}
+		</script>
+
+		<script>
+			//操作-1
+			function formatterComputer(value, row, index) {
+				return "<a style='cursor: pointer;' class='easyui-linkbutton' iconCls='icon-setrole' plain='true'  onclick='updateComputer(" + index + ")' >编辑</a>";
+			}
+            //操作-2
+			function formatterDelComputer(value, row, index) {
+			          return "<a style='cursor: pointer;' class='easyui-linkbutton' iconCls='icon-cut' plain='true'  onclick='deleteInfo(" + index + ")' >删除</a>";
+			}
+			
+		</script>
+<script type="text/javascript">
+		
+		
+		//修改计算机信息
+		    var cid="";
+			var cname="";
+			var cip="";
+			var creadroomid="";
+			var cremark="";
+			function updateComputer(index) {
+				 var data = $("#dg").datagrid("getRows");
+			     cid=data[index].cid;			    
+			    cname=data[index].cname;
+			    cip=data[index].cip;
+			    creadroomid=data[index].creadroomid;
+			    cremark=data[index].cremark;
+			    //alert(cid+"``"+cname+"``"+cip+"``"+creadroomid+"``"+cremark)
+			    var data1 = $("#dg").datagrid("getData");
+				var row = data1.rows[index];
+				
+			     $("#updateComputerForm").form("load", row);
+			     $("#updateComputer_window").window("open");
+			}
+			//提交修改院系信息的请求
+		function submitupdateComputerForm(){
+		//alert(cname!=$("#cname_upd").textbox('getValue')||cip!=$("#cip_upd").textbox('getValue')||creadroomid!=$("#creadroomid_upd").combobox('getValue')||cremark!=$("#cremark_upd").textbox('getValue'))
+		if(cname!=$("#cname_upd").textbox('getValue')||cip!=$("#cip_upd").textbox('getValue')||creadroomid!=$("#creadroomid_upd").combobox('getValue')||cremark!=$("#cremark_upd").textbox('getValue')){
+		
+	$.post(globalData.root+"Computer/updateComputer", {
+				"cid" : cid,
+				"cname" : $("#cname_upd").textbox('getValue'),
+				"cip" : $("#cip_upd").textbox('getValue'),
+				"cremark" : $("#cremark_upd").textbox('getValue'),
+				"creadroomid" : $("#creadroomid_upd").combobox('getValue')
+			}, function(date) {
+				if (date.success) {
+					$.messager.alert("提示", date.message);
+
+				}
+				$.messager.alert("提示", date.message);
+				$("#updateComputer_Form").form("clear");
+				$("#updateComputer_window").window("close");
+				$("#dg").datagrid("reload");
+			}, "json");
+		} else {
+			$.messager.alert("提示", "没有信息要提交");
+		}
+	}
+</script>
+		<script>
+			//删除计算机
+			function deleteInfo(index) {
+				var data = $("#dg").datagrid("getData");
+				var row = data.rows[index];
+				$.messager.confirm('确认', '您确认想要删除记录吗？', function(r) {
+					if(r) {
+						$.post(globalData.root+"Computer/deleteComputerByCid", {
+							cid: row.cid
+						}, function(data) {
+							
+							if(data.success) {
+								$.messager.show({
+									title: '提示信息',
+									msg: data.message,
+									timeout: 1000,
+									showType: 'slide'
+								});
+							searchComputerInfo();
+							}else{
+								$.messager.show({
+									title: '提示信息',
+									msg: data.message,
+									timeout: 1000,
+									showType: 'slide'
+								});
+							}
+						}, "json");
+							
+					}
+				});
+			}
+			
+			
+			//导入外部科室信息
+		function openExcel(){
+		    $("#ComputerWindow").window("open");
+	   }
+		</script>
+	</head>
+
+	<body>
+	<!--
+    	作者：thx
+    	时间：2018-10-04
+    	描述：搜索条件区
+    -->	
+		<div id="computertb" style="padding:5px; height:auto">
+			<form>
+				<div style="margin-bottom:5px;font-size: 12px;" >
+					电脑名称: <input class="easyui-textbox" id="cname" style="width:80px">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+					电脑IP地址: <input class="easyui-textbox" id="cip" style="width:80px">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+					阅览室:
+					<input id="creadroomid"  class="easyui-combobox"  data-options="valueField:'rid',textField:'rname',panelHeight:'auto',method:'post',url:'http://localhost:8080/thx/Readroom/queryAllReadroom'"/>
+					<a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-search" onclick="searchComputerInfo()">查找</a>
+					</div>
+			</form>
+		</div>
+<!--
+    	作者：thx
+    	时间：2018-10-04
+    	描述：信息列表区
+    -->	
+		<table name="center" class="easyui-datagrid" id="dg" title="计算机资源列表" style="width:100%;height:auto" data-options="rownumbers:true,singleSelect:true,pagination:true,method:'post',toolbar:'#tb',collapsible:true,pageSize:10">
+			<thead>
+				<tr>
+					<th data-options="field:'cid',width:80,hidden:true">编号</th>
+					<th data-options="field:'rid',width:80,hidden:true">阅览室编号</th>
+	                <th data-options="field:'rname',width:120">阅览室名称</th>
+					<th data-options="field:'cname',width:180" align="center">电脑名称</th>
+					<th data-options="field:'cip',width:180" align="center">电脑IP地址</th>
+					<th data-options="field:'cremark',width:200">计算机备注信息</th>
+					<th data-options="field:'formatterComputer',width:60,align:'center',formatter:formatterComputer">操作</th>
+					<th data-options="field:'formatterDelComputer',width:60,align:'center',formatter:formatterDelComputer">操作</th>
+					
+				</tr>
+			</thead>
+		</table>
+		<!-- 
+		       作者：thx
+    	       时间：2018-10-04
+    	       描述：操作按钮   
+		 -->
+		<div id="tb" style="padding:3px">
+	        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-add" plain="true" onclick="AddComputer()">添加</a>
+	        <a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-excel" plain="true" onclick="openExcel()">导入Excel</a>
+        </div>
+
+    <div id="ComputerWindow" class="easyui-window" title="导入Excel数据" style="padding: 10px;" data-options="iconCls:'icon-add',minimizable:false,maximizable:false,closed:true,doSize:false">
+         <form id="computerexcel"  method="post" enctype="multipart/form-data" data-options="closed:true">
+	        请选择文件:<input type="file" id="avatar" name="avatar">
+		<br/>
+		文件描述<input type="text" id="desc" name="desc" placeholder="请输入文件描述信息" />
+		<br/>
+		<input id="uploadBtn" type="button" value="开始上传" onclick="javascript:upload();" />
+		
+         </form>
+    </div>
+    <script type="text/javascript">
+function upload() {
+	var formData = new FormData();//表单数据对象
+	//取出一个文件:	 $("#avatar")[0].files[0]
+	// 取出文件数组： $("#avatar")[0].files, $("#avatar").get(0).files
+	//取出文件数组: $("#avatar").prop('files')
+	formData.append("myfile", $("#avatar").prop('files')[0] );//文件
+	formData.append("desc", $("#desc").val() );//文件描述信息
+	//alert(JSON.stringify(formData))
+	$.ajax({
+		url: globalData.root+"computer/readExcel",
+		type: 'POST',
+		data: formData,
+		dataType:'json',
+		// 告诉jQuery不要去处理发送的数据
+		processData: false,
+		// 告诉jQuery不要去设置Content-Type请求头
+		contentType: false,
+		beforeSend: function() {
+			console.log("正在拼命上传文件，请稍候...");
+		},
+		success: function(result) {
+			console.log(result);
+			console.log("上传成功 result=>"+result);
+		
+			  $("#ComputerWindow").window("close");
+				alert("上传成功");
+			//$('#excelData').text("Excel文件解析出的集合是=>"+${JSON.stringify(result)});
+		},
+		error: function(err) {
+			console.log(err);
+			console.log("上传失败 err=>"+JSON.stringify(err));
+			  $("#ComputerWindow").window("close");
+			  alert("上传失败");
+		}
+	});
+}
+</script>
+	<!--
+    	作者：thx
+    	时间：2018-10-04
+    	描述：添加计算机信息
+    -->	
+	<div id="createComputer_window" class="easyui-window" title="添加计算机信息"
+		data-options="iconCls:'icon-add',minimizable:false,maximizable:false,closed:true,doSize:false"
+		style="padding:10px;">
+	  <form id="addComputer_Form">
+		<table border="1" bordercolor="#a0c6e5"
+			style="border-collapse:collapse;margin:10px auto;">
+            <tr>
+                    <td style="min-width:70px">电脑名称<span class="red">*</span></td>
+                    <td><input id="cname_add" name="cname_add" class="easyui-textbox" data-options="required:true"/></td>
+                    <td style="min-width:70px">电脑IP地址<span class="red">*</span></td>
+                    <td><input id="cip_add" name="cip_add" class="easyui-textbox" data-options="required:true"/></td>
+                    <td>阅览室<span class="red">*</span></td>
+	                <td><input id="creadroomid_add"  class="easyui-combobox"  data-options="valueField:'rid',textField:'rname',required:true,panelHeight:'auto',method:'post',url:'http://localhost:8080/thx/Readroom/queryAllReadroom'"/>
+            </tr>
+             <tr style="height:100px">
+                <td>备注</td>
+                <td colspan="5"><input id="cremark_add" name="cremark_add" class="easyui-textbox" data-options="multiline:true,required:true" 
+                    style="border:none;width:97%;heigth:100%;resize:none"/></td>
+             </tr>      
+             <tr>
+                <td colspan="7" align="center">
+                    <a href="#" class="easyui-linkbutton"
+					iconCls="icon-save" onclick="createComputer()">保存</a>
+                    <a href="#" class="easyui-linkbutton"
+					iconCls="icon-cancel" onclick="$('#createComputer_window').window('close')">取消</a>
+                </td>
+            </tr>
+		</table>    
+     </form>
+	</div>
+	<!--
+    	作者：thx
+    	时间：2018-10-04
+    	描述：修改计算机信息
+    -->	
+		
+
+<div id="updateComputer_window" class="easyui-window" title="修改用户信息" data-options="modal:true,closed:true,iconCls:'icon-save'" style="width:500px;height:300px;padding:10px;">
+			<form id="updateComputerForm">
+				<table cellpadding="5">
+				
+					<tr>
+					<td>计算机名称:</td>
+						<td><input class="easyui-textbox" type="text" name="cname" id="cname_upd" data-options="required:true"></input>
+						</td>
+					</tr>
+					<tr>
+						<td>电脑IP地址:</td>
+						<td><input class="easyui-textbox" type="text" name="cip" id="cip_upd" data-options="required:true"></input>
+						</td>
+					</tr>
+
+					<tr>
+						<td>阅览室:</td>
+						<td><input type="text" class="easyui-combobox" id="creadroomid_upd" name="creadroomid" data-options="valueField:'rid',textField:'rname',required:true,panelHeight:'auto',method:'post',url:'http://localhost:8080/thx/Readroom/queryAllReadroom'"></td>
+					</tr>
+					<tr>
+						<td>计算机备注信息:</td>
+						<td><input type="text" class="easyui-textbox" id="cremark_upd" name="cremark" data-options="required:true"></td>
+					</tr>
+				</table>
+			</form>
+			<div style="text-align:center;padding:5px">
+				<a href="javascript:void(0)" class="easyui-linkbutton" type="button" iconCls="icon-save" onclick="submitupdateComputerForm()">保存</a>
+				<a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-cancel" onclick=" $('#updateComputer_window').window('close')">取消</a>
+			</div>
+		</div>
+
+	</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title>登录</title>
+        <script type="text/javascript" src="jquery-easyui-1.5.4.1/jquery.min.js" ></script>
+        <script type="text/javascript" src="jquery-easyui-1.5.4.1/jquery.easyui.min.js" ></script>
+        <script type="text/javascript" src="jquery-easyui-1.5.4.1/locale/easyui-lang-zh_CN.js" ></script>
+        <link rel="stylesheet" href="jquery-easyui-1.5.4.1/themes/icon.css" />
+		<link rel="stylesheet" href="jquery-easyui-1.5.4.1/themes/default/easyui.css" />
+		<script type="text/javascript" src="proRoot.js"></script>
+
+		<script type="text/javascript">
+			function submitForm() {
+				var uname = $("#ename").textbox('getValue');
+				var pwd = $("#pwd").textbox('getValue');
+				var flag = $("#createForm").form("validate"); //使用validate验证表单的所有验证是否全部通过，通过为true	
+				if(flag) {
+					$.post(globalData.root+"user/userlogin", {
+						loginname: uname,
+						password: pwd
+					}, function(result) {
+						if(result.success) { //登录成功
+							window.location.href = "main.html";
+						} else {
+							$.messager.alert("提示", result.remark)
+						}
+					}, "json");
+				} else {
+					$.messager.alert("验证", "请完善数据后再提交!");
+				}
+			}
+
+			function clearForm() {
+				$("#createForm").form('clear');
+
+			}
+		</script>
+	</head>
+
+	<body>
+
+		<div style=" margin-left: 300px; margin-top: 100px;">
+			<div class="easyui-panel" title="欢迎登录" style="width:400px;height: 250px; ">
+
+				<div style="padding:10px 60px 20px 60px;">
+
+					<form id="createForm" method="post">
+						<table cellpadding="6">
+							<tr>
+								<td>登录名:</td>
+								<td><input class="easyui-textbox"  type="text" name="uName" id="ename" data-options="required:true,validType:'minLength[3]'"></input>
+								</td>
+							</tr>
+							<tr>
+								<td>密码:</td>
+								<td><input type="password" class="easyui-textbox"  id="pwd" name="uPassword" data-options="required:true"></input>
+								</td>
+							</tr>
+							<!--<tr>
+								<td><input type="button" value="登录系统" onclick="submitForm()" />
+								</td>
+								<td><input type="reset" value="清除输入" />
+								</td>
+							</tr>
+-->
+						</table>
+					</form>
+
+					<div style="text-align:center;padding:5px">
+						<a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-ok'" onclick="submitForm()">登录系统</a>
+
+						<a href="javascript:void(0)" class="easyui-linkbutton" data-options="iconCls:'icon-no'" onclick="clearForm()">清除输入</a>
+					</div>
+
+				</div>
+
+			</div>
+		</div>
+
+	</body>
+
+</html>
